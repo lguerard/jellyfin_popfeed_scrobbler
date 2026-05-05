@@ -85,7 +85,7 @@ jobs:
           ## Installation
           Upload this zip in Jellyfin plugin settings or add to your plugin manifest.
         tag_name: v${{ needs.build.outputs.version }}
-        generate_release_notes: true
+        generate_release_notes: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
