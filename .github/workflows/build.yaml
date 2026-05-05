@@ -46,9 +46,12 @@ jobs:
     - name: Update build.yaml version
       run: |
         sed -i "s/^version:.*/version: ${{ steps.version.outputs.VERSION }}/" build.yaml
-    
+
+    - name: Create Artifacts Directory
+      run: mkdir -p artifacts
+
     - name: Build Plugin
-      run: jprm --verbosity=debug plugin build . --output=artifacts --version=${{ steps.version.outputs.VERSION }}
+      run: jprm --verbosity=debug plugin build . --output=./artifacts --version=${{ steps.version.outputs.VERSION }}
     
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
