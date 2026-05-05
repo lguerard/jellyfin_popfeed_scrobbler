@@ -1,0 +1,93 @@
+name: Build and Release Plugin
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g., 1.0.1)'
+        required: false
+        default: ''
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+    
+    - name: Install JPRM
+      run: pip install --break-system-packages jprm
+    
+    - name: Determine Version
+      id: version
+      run: |
+        if [ -n "${{ github.event.inputs.version }}" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        else
+          # Get current version from build.yaml and increment
+          VERSION=$(grep '^version:' build.yaml | awk -F'"' '{print $2}')
+          # Increment patch version
+          IFS='.' read -r major minor patch <<< "$VERSION"
+          patch=$((patch + 1))
+          VERSION="${major}.${minor}.${patch}.0"
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+    
+    - name: Update build.yaml version
+      run: |
+        sed -i "s/^version:.*/version: ${{ steps.version.outputs.VERSION }}/" build.yaml
+    
+    - name: Build Plugin
+      run: jprm --verbosity=debug plugin build . --output=artifacts --version=${{ steps.version.outputs.VERSION }}
+    
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: popfeed-plugin
+        path: artifacts/popfeed_*.zip
+        retention-days: 5
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: popfeed-plugin
+        path: artifacts
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: artifacts/popfeed_*.zip
+        name: Popfeed v${{ needs.build.outputs.version }}
+        body: |
+          ## What's New
+          - Updated to version ${{ needs.build.outputs.version }}
+          
+          ## Installation
+          Upload this zip in Jellyfin plugin settings or add to your plugin manifest.
+        tag_name: v${{ needs.build.outputs.version }}
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Commit version bump
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "Bump version to ${{ needs.build.outputs.version }}"
+        file_pattern: build.yaml
