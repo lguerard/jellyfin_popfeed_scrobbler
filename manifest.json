@@ -5,7 +5,7 @@
     "description": "Sync your Jellyfin watch history with Popfeed and optionally post to Bluesky when you finish watching.",
     "owner": "lguerard",
     "category": "General",
-    "imageUrl": "https://raw.githubusercontent.com/lguerard/jellyfin-plugin-popfeed/main/popfeed.png",
+    "imageUrl": "https://raw.githubusercontent.com/lguerard/jellyfin_popfeed_scrobbler/main/popfeed.png",
     "versions": [
       {
         "version": "1.0.0.0",
@@ -14,7 +14,7 @@
         "changelog": "- Initial release\n- Mark watched items on Popfeed\n- Optional posting to Bluesky",
         "releaseDate": "2026-05-05",
         "status": "Stable",
-        "downloadUrl": "https://github.com/lguerard/jellyfin-plugin-popfeed/releases/download/v1.0.0.0/popfeed_1.0.0.0.zip",
+        "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v1.0.0.0/popfeed_1.0.0.0.zip",
         "checksum": "REPLACEME"
       }
     ]
