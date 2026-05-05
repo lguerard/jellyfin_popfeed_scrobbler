@@ -91,7 +91,7 @@ jobs:
           Upload this zip in Jellyfin plugin settings or add to your plugin manifest.
         tag_name: v${{ needs.build.outputs.version }}
         generate_release_notes: true
-    
+
     - name: Commit version bump
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
