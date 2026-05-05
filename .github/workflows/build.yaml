@@ -74,7 +74,7 @@ jobs:
         path: artifacts
     
     - name: Create Release
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v1
       with:
         files: artifacts/popfeed_*.zip
         name: Popfeed v${{ needs.build.outputs.version }}
@@ -87,6 +87,7 @@ jobs:
           ## Installation
           Upload this zip in Jellyfin plugin settings or add to your plugin manifest.
         tag_name: v${{ needs.build.outputs.version }}
+        generate_release_notes: true
     
     - name: Commit version bump
       uses: stefanzweifel/git-auto-commit-action@v5
