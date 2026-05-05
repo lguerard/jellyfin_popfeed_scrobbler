@@ -109,4 +109,3 @@ Follow all markdownlint (MDxxx) rules:
 - Use ordered lists for sequential steps, unordered for non-sequential
 - Use consistent quote styles (double quotes)
 - Include proper spacing between block elements
-7.
