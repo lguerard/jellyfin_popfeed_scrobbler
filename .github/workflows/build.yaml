@@ -74,20 +74,21 @@ jobs:
         path: artifacts
     
     - name: Create Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: artifacts/popfeed_*.zip
-        name: Popfeed v${{ needs.build.outputs.version }}
-        body: |
-          ## What's New
-          - Updated to version ${{ needs.build.outputs.version }}
-          
-          ## Installation
-          Upload this zip in Jellyfin plugin settings or add to your plugin manifest.
-        tag_name: v${{ needs.build.outputs.version }}
-        generate_release_notes: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        CHANGELOG=$(cat <<'EOF'
+        ## What's New
+        - Initial release
+        - Mark watched items on Popfeed (properly marked as finished)
+        - Optional posting to Bluesky
+
+        ## Installation
+        Upload this zip in Jellyfin plugin settings or add to your plugin manifest.
+        EOF
+        )
+        gh release create v${{ needs.build.outputs.version }} \
+          --title "Popfeed v${{ needs.build.outputs.version }}" \
+          --notes "$CHANGELOG" \
+          artifacts/popfeed_*.zip
     
     - name: Commit version bump
       uses: stefanzweifel/git-auto-commit-action@v5
