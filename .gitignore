@@ -1,0 +1,11 @@
+bin/
+obj/
+artifacts/
+*.user
+*.suo
+.vs/
+.idea/
+*.log
+*.zip
+*.zip.md5sum
+*.zip.meta.json
