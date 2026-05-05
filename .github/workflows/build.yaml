@@ -46,7 +46,7 @@ jobs:
     - name: Update build.yaml version
       run: |
         sed -i "s/^version:.*/version: ${{ steps.version.outputs.VERSION }}/" build.yaml
-    
+
     - name: Create Artifacts Directory
       run: mkdir -p artifacts
 
