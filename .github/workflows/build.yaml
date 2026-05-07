@@ -29,7 +29,7 @@ jobs:
     
     - name: Install JPRM and yq
       run: |
-        pip install --break-system-packages jprm
+        pip install --break-system-packages jprm jq
         wget https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64 -O /usr/local/bin/yq
         chmod +x /usr/local/bin/yq
     
@@ -74,8 +74,9 @@ jobs:
         VERSION=${{ steps.version.outputs.VERSION }}
         CHECKSUM=$(md5sum artifacts/popfeed_*.zip | awk '{print $1}')
         RELEASE_DATE=$(date +%Y-%m-%d)
+        CHANGELOG=$(yq eval '.changelog' build.yaml)
         
-        cat > manifest.json << EOF
+        cat > manifest.json <<'EOF'
         [
           {
             "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -85,19 +86,27 @@ jobs:
             "category": "General",
             "versions": [
               {
-                "version": "$VERSION",
+                "version": "VERSION_PLACEHOLDER",
                 "targetAbi": "10.11.0.0",
                 "framework": "net9.0",
-                "changelog": "$(yq eval '.changelog' build.yaml | tr '\n' '\\n' | sed 's/\\/\\\\/g')",
-                "releaseDate": "$RELEASE_DATE",
+                "changelog": "CHANGELOG_PLACEHOLDER",
+                "releaseDate": "RELEASE_DATE_PLACEHOLDER",
                 "status": "Stable",
-                "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v$VERSION/popfeed_$VERSION.zip",
-                "checksum": "$CHECKSUM"
+                "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/vVERSION_PLACEHOLDER/popfeed_VERSION_PLACEHOLDER.zip",
+                "checksum": "CHECKSUM_PLACEHOLDER"
               }
             ]
           }
         ]
         EOF
+        
+        sed -i "s/VERSION_PLACEHOLDER/$VERSION/g" manifest.json
+        sed -i "s/RELEASE_DATE_PLACEHOLDER/$RELEASE_DATE/g" manifest.json
+        sed -i "s/CHECKSUM_PLACEHOLDER/$CHECKSUM/g" manifest.json
+        # Handle multiline changelog properly
+        echo "$CHANGELOG" > /tmp/changelog.txt
+        CHANGELOG_JSON=$(jq -Rs . < /tmp/changelog.txt)
+        sed -i "s/CHANGELOG_PLACEHOLDER/$CHANGELOG_JSON/g" manifest.json
     
     - name: Commit Version Bump
       uses: stefanzweifel/git-auto-commit-action@v5
