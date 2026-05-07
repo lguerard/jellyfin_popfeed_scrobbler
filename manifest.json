@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "1.0.3",
+        "checksum": "09b56d76f594c00ae71ee46520c81c5fea532bbf2b9ecdfd2edecb9613170ecd",
+        "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v1.0.3/jellyfin-popfeed-scrobbler_1.0.3.0.zip",
+        "targetAbi": "10.11.0.0",
+        "releaseDate": "2026-05-07",
+        "releaseNotes": "\"## 🐛 Bug Fixes\\n\\n- fix(ci): use commit SHA for jellyfin-plugin-repository-manager (@lguerard)\\n\\n## 📝 Other Changes\\n\\n- chore: update version to (@lguerard)\\n- chore: update manifest and build for v1.0.2 (@lguerard)\\n- ci(build): update version and build in same job (@lguerard)\\n- Merge branch 'dev' (@lguerard)\\n\\n\\n## 📦 Installation\\n\\n1. Download the zip\\n2. Extract to your Jellyfin plugins folder\\n3. Restart Jellyfin\\n\""
+      },
+      {
         "version": "1.0.2",
         "checksum": "7eadc6904d41e0fe1dfa720290ac5ea0f6ad275ac6534120b838c40d70941988",
         "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v1.0.2/jellyfin-popfeed-scrobbler_1.0.2.zip",
