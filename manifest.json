@@ -10,7 +10,8 @@
         "version": "1.0.0",
         "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v1.0.0/jellyfin-popfeed-scrobbler_1.0.0.0.zip",
         "checksum": "2ed55fa14d1f49abd582a3a2ceeff30a12e679aad25acedd03a1b7899d00670e",
-        "releaseDate": "2026-05-07"
+        "releaseDate": "2026-05-07",
+        "releaseNotes": "🐛 Bug Fixes\n- fix: rename to jellyfin-popfeed-scrobbler\n- fix: use tag version and clean up for fresh start\n\n📝 Other Changes\n- chore: update manifest for v1.1.4\n- chore: bump version to 1.1.4\n- chore: update manifest for v1.1.5\n- chore: update manifest for v1.1.6\n- chore: align version to 1.1.6\n- chore: update manifest for v1.1.7\n- chore: align version to 1.1.7\n- chore: align version to 1.1.8\n\n📦 Installation\n1. Download the zip\n2. Extract to your Jellyfin plugins folder\n3. Restart Jellyfin"
       }
     ]
   }
