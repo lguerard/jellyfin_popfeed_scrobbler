@@ -7,10 +7,14 @@
     "category": "General",
     "versions": [
       {
-        "version": "1.1.7",
-        "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v1.1.7/jellyfin-popfeed-scrobbler_1.1.6.0.zip",
-        "checksum": "e5e454911e02f024b8c43fda3ff3b83ee8de41e29a23733d32b2f7572f525ce1",
-        "releaseDate": "2026-05-07"
+        "version": "1.0.0",
+        "targetAbi": "10.11.0.0",
+        "framework": "net9.0",
+        "changelog": "- Initial release\n- Mark watched items on Popfeed (properly marked as finished)\n- Optional posting to Bluesky",
+        "releaseDate": "2026-05-07",
+        "status": "Stable",
+        "downloadUrl": "",
+        "checksum": ""
       }
     ]
   }
