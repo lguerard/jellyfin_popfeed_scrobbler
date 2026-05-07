@@ -14,3 +14,72 @@ on:
 jobs:
   build:
     uses: jellyfin/jellyfin-meta-plugins/.github/workflows/build.yaml@672e46d3ec5096731edbb7581ca872f3d8175cf8
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifact
+          path: artifacts
+
+      - name: Get Version
+        id: version
+        run: |
+          VERSION=$(yq eval '.version' build.yaml)
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate Release Notes
+        id: notes
+        run: |
+          # Get commits since last release
+          PREV_TAG=$(git tag --sort=-version:refname | head -1 || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s (%an)" --reverse "$PREV_TAG"..HEAD 2>/dev/null || git log --pretty=format:"- %s (%an)" --reverse -10)
+          else
+            COMMITS=$(git log --pretty=format:"- %s (%an)" --reverse -10)
+          fi
+          
+          # Categorize commits
+          FEATURES=""
+          FIXES=""
+          OTHER=""
+          
+          while IFS= read -r commit; do
+            [[ -z "$commit" ]] && continue
+            if echo "$commit" | grep -qE "^+- feat(\([^)]+\))?:"; then
+              FEATURES="$FEATURES$commit"$'\n'
+            elif echo "$commit" | grep -qE "^+- fix(\([^)]+\))?:"; then
+              FIXES="$FIXES$commit"$'\n'
+            else
+              OTHER="$OTHER$commit"$'\n'
+            fi
+          done <<< "$COMMITS"
+          
+          NOTES=""
+          [ -n "$FEATURES" ] && NOTES="$NOTES## ✨ New Features\n\n$FEATURES\n"
+          [ -n "$FIXES" ] && NOTES="$NOTES## 🐛 Bug Fixes\n\n$FIXES\n"
+          [ -n "$OTHER" ] && NOTES="$NOTES## 📝 Other Changes\n\n$OTHER\n"
+          [ -z "$NOTES" ] && NOTES="## Changes\n\n- See full changelog in commit history"
+          
+          NOTES="$NOTES\n\n## 📦 Installation\n\n1. Download the zip file\n2. Extract to your Jellyfin plugins folder\n3. Restart Jellyfin"
+          
+          echo "$NOTES" > release-notes.md
+          cat release-notes.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: 'jellyfin-popfeed-scrobbler v${{ steps.version.outputs.VERSION }}'
+          body_path: release-notes.md
+          files: artifacts/*
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
