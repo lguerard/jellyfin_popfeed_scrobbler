@@ -65,32 +65,32 @@ jobs:
         path: artifacts/*.zip
         retention-days: 30
     
-    - name: Update Manifest
+- name: Update Manifest
       run: |
         VERSION=${{ steps.get-version.outputs.VERSION }}
         PACKAGE=$(ls artifacts/*.zip | head -1)
+        BASENAME=$(basename "$PACKAGE")
         CHECKSUM=$(md5sum "$PACKAGE" | cut -d' ' -f1)
         TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         
         # Get changelog
         CHANGELOG=$(yq eval '.changelog' build.yaml | head -c 500)
         
-        # Build new version entry
+        # Build new version entry using actual filename
         jq -n --arg v "$VERSION" \
-           --arg url "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v$VERSION/popfeed_v$VERSION.zip" \
+           --arg url "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v$VERSION/$BASENAME" \
            --arg checksum "$CHECKSUM" \
            --arg timestamp "$TIMESTAMP" \
            --arg changelog "$CHANGELOG" \
            '{version: $v, targetAbi: "10.11.0.0", framework: "net9.0", changelog: $changelog, releaseDate: $timestamp, status: "Stable", downloadUrl: $url, checksum: $checksum}' > /tmp/new_version.json
         
-        # Prepend to existing versions
-        if [ -f manifest.json ]; then
+        # Prepend to existing versions or create new array
+        if [ -f manifest.json ] && [ -s manifest.json ]; then
           jq -s --argjson newver "$(cat /tmp/new_version.json)" '[$newver] + .[0].versions' manifest.json > manifest_updated.json
           mv manifest_updated.json manifest.json
         else
-          echo "[$(cat /tmp/new_version.json)]" > manifest.json
-          jq -s '.[0].versions = [.[0]]' manifest.json > manifest_updated.json
-          mv manifest_updated.json manifest.json
+          # Create basic array structure
+          jq -n --argjson ver "$(cat /tmp/new_version.json)" '[{id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", name: "Popfeed", description: "Sync your Jellyfin watch history with Popfeed and optionally post to Bluesky when you finish watching.", owner: "lguerard", category: "General", versions: [$ver]}]' > manifest.json
         fi
     
     - name: Commit Version Bump
