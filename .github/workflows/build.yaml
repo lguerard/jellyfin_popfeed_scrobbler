@@ -139,13 +139,17 @@ jobs:
           # Read release notes and escape for JSON
           RELEASE_NOTES=$(jq -Rs '.' release-notes.md)
           
+          # Read targetAbi from build.yaml
+          TARGETABI=$(grep "^targetAbi:" build.yaml | cut -d'"' -f2)
+          
           # Update manifest.json - prepend new version to the versions array
           jq --arg version "$VERSION" \
              --arg url "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v${VERSION}/$(basename $ARTIFACT)" \
              --arg checksum "$CHECKSUM" \
              --arg date "$(date -u +%Y-%m-%d)" \
              --arg notes "$RELEASE_NOTES" \
-             '.[0].versions |= ([{"version": $version, "downloadUrl": $url, "checksum": $checksum, "releaseDate": $date, "releaseNotes": $notes}] + .)' manifest.json > manifest.json.tmp && mv manifest.json.tmp manifest.json
+             --arg targetAbi "$TARGETABI" \
+             '.[0].versions |= ([{"version": $version, "checksum": $checksum, "downloadUrl": $url, "targetAbi": $targetAbi, "releaseDate": $date, "releaseNotes": $notes}] + .)' manifest.json > manifest.json.tmp && mv manifest.json.tmp manifest.json
           
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
