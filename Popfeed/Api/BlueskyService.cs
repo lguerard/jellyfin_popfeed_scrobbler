@@ -109,26 +109,9 @@ public class BlueskyService
             var recordJson = JsonSerializer.Serialize(popfeedItem);
             var content = new StringContent(recordJson, Encoding.UTF8, "application/json");
 
-            using var request = new HttpRequestMessage(HttpMethod.Post, $"{AtProtoApiUrl}/xrpc/com.atproto.repo.createRecord")
-            {
-                Content = content
-            };
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
-            request.Headers.Add("Content-Type", "application/json");
-
-            var postData = new
-            {
-                repo = _did,
-                collection = PopfeedCollection,
-                record = popfeedItem
-            };
-
-            var json = JsonSerializer.Serialize(postData);
-            var requestContent = new StringContent(json, Encoding.UTF8, "application/json");
-
             using var apiRequest = new HttpRequestMessage(HttpMethod.Post, $"{AtProtoApiUrl}/xrpc/com.atproto.repo.createRecord")
             {
-                Content = requestContent
+                Content = content
             };
             apiRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
 
