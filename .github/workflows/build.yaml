@@ -53,19 +53,21 @@ jobs:
         yq -i '.version = env(VERSION)' build.yaml
 
     - name: Build Plugin
-      run: jprm plugin build . --output=./artifacts --version=${{ steps.get-version.outputs.version }}
+      run: |
+        jprm plugin build . --output=./artifacts --version=${{ steps.get-version.outputs.version }}
+        ls -la artifacts/
     
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: plugin-package
-        path: artifacts/popfeed_*.zip
+        path: artifacts/*.zip
         retention-days: 30
     
     - name: Update Manifest
       run: |
         VERSION=${{ steps.get-version.outputs.VERSION }}
-        PACKAGE=$(ls artifacts/popfeed_*.zip)
+        PACKAGE=$(ls artifacts/*.zip | head -1)
         CHECKSUM=$(md5sum "$PACKAGE" | cut -d' ' -f1)
         TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         
@@ -74,7 +76,7 @@ jobs:
         
         # Build new version entry
         jq -n --arg v "$VERSION" \
-           --arg url "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v$VERSION/popfeed_$VERSION.zip" \
+           --arg url "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v$VERSION/popfeed_v$VERSION.zip" \
            --arg checksum "$CHECKSUM" \
            --arg timestamp "$TIMESTAMP" \
            --arg changelog "$CHANGELOG" \
