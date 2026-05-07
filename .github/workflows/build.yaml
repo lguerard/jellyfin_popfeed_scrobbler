@@ -48,11 +48,11 @@ jobs:
           CURRENT_TAG="v$VERSION"
           PREV_TAG=$(git tag --sort=-version:refname | grep -A1 "^${CURRENT_TAG}$" | tail -1 | grep -v "^${CURRENT_TAG}$" || echo "")
           
-if [ -n "$PREV_TAG" ]; then
-             COMMITS=$(git log --pretty=format:"- %s (@%an)" --reverse "$PREV_TAG"..HEAD 2>/dev/null || git log --pretty=format:"- %s (@%an)" --reverse -10)
-           else
-             COMMITS=$(git log --pretty=format:"- %s (@%an)" --reverse -10)
-           fi
+          if [ -n "$PREV_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s (@%an)" --reverse "$PREV_TAG"..HEAD 2>/dev/null || git log --pretty=format:"- %s (@%an)" --reverse -10)
+          else
+            COMMITS=$(git log --pretty=format:"- %s (@%an)" --reverse -10)
+          fi
           
           # Categorize
           FEATURES=""
@@ -99,7 +99,7 @@ if [ -n "$PREV_TAG" ]; then
       - name: Update Manifest
         if: github.event_name == 'push'
         run: |
-          VERSION=${{ steps.version.outputs.VERSION }}
+          VERSION=$VERSION
           ARTIFACT=$(ls artifacts/*.zip | head -1)
           CHECKSUM=$(sha256sum "$ARTIFACT" | cut -d' ' -f1)
           
@@ -114,4 +114,4 @@ if [ -n "$PREV_TAG" ]; then
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add manifest.json
           git diff --staged --quiet || git commit -m "chore: update manifest for v$VERSION"
-          git push origin main
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/lguerard/jellyfin_popfeed_scrobbler.git main
