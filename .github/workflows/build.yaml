@@ -2,13 +2,14 @@ name: Build and Release Plugin
 
 on:
   push:
-    branches: [main]
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g., 2)'
-        required: false
-        default: ''
+        description: 'Version to build (e.g., 1.0.0)'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -17,107 +18,88 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.version.outputs.VERSION }}
+      version: ${{ steps.get-version.outputs.version }}
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '9.0.x'
     
-    - name: Install JPRM and yq
+    - name: Install JPRM and tools
       run: |
         pip install --break-system-packages jprm jq
         wget https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64 -O /usr/local/bin/yq
         chmod +x /usr/local/bin/yq
     
-    - name: Determine Version
-      id: version
+    - name: Get Version
+      id: get-version
       run: |
-        if [ -n "${{ github.event.inputs.version }}" ]; then
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
           VERSION="${{ github.event.inputs.version }}"
         else
-          # Get current version from build.yaml and increment
-          CURRENT=$(yq eval '.version' build.yaml)
-          # Split version and increment patch
-          MAJOR=$(echo "$CURRENT" | cut -d. -f1)
-          MINOR=$(echo "$CURRENT" | cut -d. -f2)
-          PATCH=$(echo "$CURRENT" | cut -d. -f3)
-          PATCH=$((PATCH + 1))
-          VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          VERSION="${GITHUB_REF#refs/tags/v}"
         fi
-        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Building version: $VERSION"
     
     - name: Update build.yaml version
       run: |
-        export VERSION=${{ steps.version.outputs.VERSION }}
+        export VERSION=${{ steps.get-version.outputs.version }}
         yq -i '.version = env(VERSION)' build.yaml
 
-    - name: Create Artifacts Directory
-      run: mkdir -p artifacts
-
     - name: Build Plugin
-      run: jprm --verbosity=debug plugin build . --output=./artifacts --version=${{ steps.version.outputs.VERSION }}
+      run: jprm plugin build . --output=./artifacts --version=${{ steps.get-version.outputs.version }}
     
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: popfeed-plugin
+        name: plugin-package
         path: artifacts/popfeed_*.zip
-        retention-days: 5
+        retention-days: 30
     
-- name: Update Manifest
+    - name: Update Manifest
       run: |
-        set -e
-        VERSION=${{ steps.version.outputs.VERSION }}
-        CHECKSUM=$(md5sum artifacts/popfeed_*.zip | awk '{print $1}')
-        RELEASE_DATE=$(date +%Y-%m-%d)
+        VERSION=${{ steps.get-version.outputs.VERSION }}
+        PACKAGE=$(ls artifacts/popfeed_*.zip)
+        CHECKSUM=$(md5sum "$PACKAGE" | cut -d' ' -f1)
+        TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         
-        # Get changelog (limit length)
+        # Get changelog
         CHANGELOG=$(yq eval '.changelog' build.yaml | head -c 500)
         
-        # Build manifest with single version (for now)
-        cat > manifest.json << 'MFINAL'
-        [
-          {
-            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-            "name": "Popfeed",
-            "description": "Sync your Jellyfin watch history with Popfeed and optionally post to Bluesky when you finish watching.",
-            "owner": "lguerard",
-            "category": "General",
-            "versions": [
-              {
-                "version": "VERSION_PLACEHOLDER",
-                "targetAbi": "10.11.0.0",
-                "framework": "net9.0",
-                "changelog": "CHANGELOG_PLACEHOLDER",
-                "releaseDate": "RELEASE_DATE_PLACEHOLDER",
-                "status": "Stable",
-                "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/vVERSION_PLACEHOLDER/popfeed_VERSION_PLACEHOLDER.zip",
-                "checksum": "CHECKSUM_PLACEHOLDER"
-              }
-            ]
-          }
-        ]
-        MFINAL
+        # Build new version entry
+        jq -n --arg v "$VERSION" \
+           --arg url "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v$VERSION/popfeed_$VERSION.zip" \
+           --arg checksum "$CHECKSUM" \
+           --arg timestamp "$TIMESTAMP" \
+           --arg changelog "$CHANGELOG" \
+           '{version: $v, targetAbi: "10.11.0.0", framework: "net9.0", changelog: $changelog, releaseDate: $timestamp, status: "Stable", downloadUrl: $url, checksum: $checksum}' > /tmp/new_version.json
         
-        sed -i "s/VERSION_PLACEHOLDER/$VERSION/g" manifest.json
-        sed -i "s/CHANGELOG_PLACEHOLDER/$CHANGELOG/g" manifest.json
-        sed -i "s/RELEASE_DATE_PLACEHOLDER/$RELEASE_DATE/g" manifest.json
-        sed -i "s/CHECKSUM_PLACEHOLDER/$CHECKSUM/g" manifest.json
+        # Prepend to existing versions
+        if [ -f manifest.json ]; then
+          jq -s --argjson newver "$(cat /tmp/new_version.json)" '[$newver] + .[0].versions' manifest.json > manifest_updated.json
+          mv manifest_updated.json manifest.json
+        else
+          echo "[$(cat /tmp/new_version.json)]" > manifest.json
+          jq -s '.[0].versions = [.[0]]' manifest.json > manifest_updated.json
+          mv manifest_updated.json manifest.json
+        fi
     
     - name: Commit Version Bump
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
-        commit_message: "Bump version to ${{ steps.version.outputs.VERSION }}"
+        commit_message: "Bump version to ${{ steps.get-version.outputs.VERSION }}"
         file_pattern: build.yaml manifest.json
 
   release:
     needs: build
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
     
     steps:
     - uses: actions/checkout@v4
@@ -125,20 +107,14 @@ jobs:
     - name: Download Artifact
       uses: actions/download-artifact@v4
       with:
-        name: popfeed-plugin
+        name: plugin-package
         path: artifacts
     
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
+        name: 'Release v${{ needs.build.outputs.version }}'
         files: artifacts/popfeed_*.zip
-        name: Popfeed v${{ needs.build.outputs.version }}
-        body: |
-          ## What's New
-          - Mark watched items on Popfeed (properly marked as finished)
-          - Optional posting to Bluesky
-
-          ## Installation
-          Upload this zip in Jellyfin plugin settings or add to your plugin manifest.
-        tag_name: v${{ needs.build.outputs.version }}
         generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
