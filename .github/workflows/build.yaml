@@ -41,7 +41,7 @@ jobs:
           dotnet-version: "9.0.x"
 
       - name: Build Jellyfin Plugin
-        uses: oddstr13/jellyfin-plugin-repository-manager@v1
+        uses: oddstr13/jellyfin-plugin-repository-manager@9497a0a499416cc572ed2e07a391d9f943a37b4d
         id: jprm
         with:
           dotnet-target: "net9.0"
