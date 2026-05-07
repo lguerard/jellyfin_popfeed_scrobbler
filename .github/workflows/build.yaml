@@ -76,40 +76,11 @@ jobs:
         CHECKSUM=$(md5sum artifacts/popfeed_*.zip | awk '{print $1}')
         RELEASE_DATE=$(date +%Y-%m-%d)
         
-        # Get current version list (max 5 to keep small)
-        if [ -f manifest.json ] && [ -s manifest.json ]; then
-          LEVELS=$(jq '.[0].versions[:5] | length' manifest.json 2>/dev/null || echo "0")
-        else
-          LEVELS="0"
-        fi
+        # Get changelog (limit length)
+        CHANGELOG=$(yq eval '.changelog' build.yaml | head -c 500)
         
-        # Build new version object
-        CHANGELOG=$(yq eval '.changelog' build.yaml | head -c 500)  # limit length
-        cat > /tmp/new_version.json << VNEW
-        {
-          "version": "$VERSION",
-          "targetAbi": "10.11.0.0",
-          "framework": "net9.0",
-          "changelog": "$CHANGELOG",
-          "releaseDate": "$RELEASE_DATE",
-          "status": "Stable",
-          "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v$VERSION/popfeed_$VERSION.zip",
-          "checksum": "$CHECKSUM"
-        }
-VNEW
-        
-        # Read old versions
-        if [ -f manifest.json ] && [ "$LEVELS" -gt 0 ] 2>/dev/null; then
-          OLD_VERSIONS=$(jq -c '.[0].versions[:5]' manifest.json 2>/dev/null || echo "[]")
-        else
-          OLD_VERSIONS="[]"
-        fi
-        
-        # Combine: new + old
-        COMBINED=$(jq -s --argjson new "$(cat /tmp/new_version.json)" --argjson old "$OLD_VERSIONS" '$new + $old')
-        
-        # Write manifest
-        cat > manifest.json << MFINAL
+        # Build manifest with single version (for now)
+        cat > manifest.json << 'MFINAL'
         [
           {
             "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -117,10 +88,26 @@ VNEW
             "description": "Sync your Jellyfin watch history with Popfeed and optionally post to Bluesky when you finish watching.",
             "owner": "lguerard",
             "category": "General",
-            "versions": $COMBINED
+            "versions": [
+              {
+                "version": "VERSION_PLACEHOLDER",
+                "targetAbi": "10.11.0.0",
+                "framework": "net9.0",
+                "changelog": "CHANGELOG_PLACEHOLDER",
+                "releaseDate": "RELEASE_DATE_PLACEHOLDER",
+                "status": "Stable",
+                "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/vVERSION_PLACEHOLDER/popfeed_VERSION_PLACEHOLDER.zip",
+                "checksum": "CHECKSUM_PLACEHOLDER"
+              }
+            ]
           }
         ]
-MFINAL
+        MFINAL
+        
+        sed -i "s/VERSION_PLACEHOLDER/$VERSION/g" manifest.json
+        sed -i "s/CHANGELOG_PLACEHOLDER/$CHANGELOG/g" manifest.json
+        sed -i "s/RELEASE_DATE_PLACEHOLDER/$RELEASE_DATE/g" manifest.json
+        sed -i "s/CHECKSUM_PLACEHOLDER/$CHECKSUM/g" manifest.json
     
     - name: Commit Version Bump
       uses: stefanzweifel/git-auto-commit-action@v5
