@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (e.g., 1.0.1)'
+        description: 'Version (e.g., 2)'
         required: false
         default: ''
 
@@ -27,8 +27,11 @@ jobs:
       with:
         dotnet-version: '9.0.x'
     
-    - name: Install JPRM
-      run: pip install --break-system-packages jprm yq
+    - name: Install JPRM and yq
+      run: |
+        pip install --break-system-packages jprm
+        wget https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64 -O /usr/local/bin/yq
+        chmod +x /usr/local/bin/yq
     
     - name: Determine Version
       id: version
@@ -80,7 +83,6 @@ jobs:
         name: Popfeed v${{ needs.build.outputs.version }}
         body: |
           ## What's New
-          - Initial release
           - Mark watched items on Popfeed (properly marked as finished)
           - Optional posting to Bluesky
 
