@@ -122,6 +122,10 @@ jobs:
           
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add manifest.json
-          git diff --staged --quiet || git commit -m "chore: update manifest for v$VERSION"
+          
+          # Also update build.yaml version to match tag
+          sed -i "s/^version: \".*\"/version: \"$VERSION\"/" build.yaml
+          
+          git add manifest.json build.yaml
+          git diff --staged --quiet || git commit -m "chore: update manifest and build for v$VERSION"
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/lguerard/jellyfin_popfeed_scrobbler.git tmp-branch:main
