@@ -1,7 +1,7 @@
 [
   {
     "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "name": "Popfeed",
+    "name": "jellyfin-popfeed-scrobbler",
     "description": "Sync your Jellyfin watch history with Popfeed and optionally post to Bluesky when you finish watching.",
     "owner": "lguerard",
     "category": "General",
