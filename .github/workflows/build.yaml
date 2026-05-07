@@ -98,6 +98,12 @@ jobs:
           }
         ]
         EOF
+    
+    - name: Commit Version Bump
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "Bump version to ${{ steps.version.outputs.VERSION }}"
+        file_pattern: build.yaml manifest.json
 
   release:
     needs: build
@@ -126,9 +132,3 @@ jobs:
           Upload this zip in Jellyfin plugin settings or add to your plugin manifest.
         tag_name: v${{ needs.build.outputs.version }}
         generate_release_notes: true
-
-    - name: Commit version bump
-      uses: stefanzweifel/git-auto-commit-action@v5
-      with:
-        commit_message: "Bump version to ${{ needs.build.outputs.version }}"
-        file_pattern: build.yaml manifest.json
