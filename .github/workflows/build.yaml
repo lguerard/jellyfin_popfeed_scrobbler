@@ -1,55 +1,99 @@
-name: '🏗️ Build Plugin'
+name: Build and Release Plugin
 
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - '**/*.md'
-  pull_request:
-    branches: [main]
-    paths-ignore:
-      - '**/*.md'
   workflow_dispatch:
     inputs:
-      create_release:
-        description: 'Create GitHub Release'
+      version:
+        description: 'Version (e.g., 1.0.1)'
         required: false
-        default: 'false'
-        type: boolean
+        default: ''
+
+permissions:
+  contents: write
 
 jobs:
   build:
-    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/build.yaml@672e46d3ec5096731edbb7581ca872f3d8175cf8
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.VERSION }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+    
+    - name: Install JPRM
+      run: pip install --break-system-packages jprm
+    
+    - name: Determine Version
+      id: version
+      run: |
+        if [ -n "${{ github.event.inputs.version }}" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        else
+          # Get current version from build.yaml and increment
+          VERSION=$(grep '^version:' build.yaml | awk -F'"' '{print $2}')
+          # Increment patch version
+          IFS='.' read -r major minor patch <<< "$VERSION"
+          patch=$((patch + 1))
+          VERSION="${major}.${minor}.${patch}.0"
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Building version: $VERSION"
+    
+    - name: Update build.yaml version
+      run: |
+        sed -i "s/^version:.*/version: ${{ steps.version.outputs.VERSION }}/" build.yaml
+
+    - name: Create Artifacts Directory
+      run: mkdir -p artifacts
+
+    - name: Build Plugin
+      run: jprm --verbosity=debug plugin build . --output=./artifacts --version=${{ steps.version.outputs.VERSION }}
+    
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: popfeed-plugin
+        path: artifacts/popfeed_*.zip
+        retention-days: 5
 
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
+    
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+    
+    - name: Download Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: popfeed-plugin
+        path: artifacts
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: artifacts/popfeed_*.zip
+        name: Popfeed v${{ needs.build.outputs.version }}
+        body: |
+          ## What's New
+          - Initial release
+          - Mark watched items on Popfeed (properly marked as finished)
+          - Optional posting to Bluesky
 
-      - name: Install yq
-        run: pip install --break-system-packages yq
+          ## Installation
+          Upload this zip in Jellyfin plugin settings or add to your plugin manifest.
+        tag_name: v${{ needs.build.outputs.version }}
+        generate_release_notes: true
 
-      - name: Get Version
-        id: version
-        run: |
-          VERSION=$(yq eval '.version' build.yaml)
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Download Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifact
-          path: artifacts
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: artifacts/*
-          name: Popfeed v${{ steps.version.outputs.VERSION }}
-          tag_name: v${{ steps.version.outputs.VERSION }}
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Commit version bump
+      uses: stefanzweifel/git-auto-commit-action@v5
+      with:
+        commit_message: "Bump version to ${{ needs.build.outputs.version }}"
+        file_pattern: build.yaml
