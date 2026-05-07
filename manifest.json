@@ -7,9 +7,9 @@
     "category": "General",
     "versions": [
       {
-        "version": "1.1.5",
-        "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v1.1.5/popfeed_1.1.4.0.zip",
-        "checksum": "c998e0e44315f02941b262ff6ce56444ba2d18a9d0d3d37b488746fd31ef23e9",
+        "version": "1.1.6",
+        "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v1.1.6/jellyfin-popfeed-scrobbler_1.1.5.0.zip",
+        "checksum": "dcabfb755a90f20097cabd74a8eeff70fff57833c179c762368ad0058f5cee43",
         "releaseDate": "2026-05-07"
       }
     ]
