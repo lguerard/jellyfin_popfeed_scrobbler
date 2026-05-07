@@ -70,15 +70,20 @@ jobs:
             fi
           done <<< "$COMMITS"
           
-          NOTES=""
-          [ -n "$FEATURES" ] && NOTES="$NOTES## ✨ New Features\n\n$FEATURES\n"
-          [ -n "$FIXES" ] && NOTES="$NOTES## 🐛 Bug Fixes\n\n$FIXES\n"
-          [ -n "$OTHER" ] && NOTES="$NOTES## 📝 Other Changes\n\n$OTHER\n"
-          [ -z "$NOTES" ] && NOTES="## Changes\n\n- See full changelog in commit history"
+          # Build using heredoc for proper newlines
+          {
+            [ -n "$FEATURES" ] && echo "## ✨ New Features" && echo "" && echo "$FEATURES"
+            [ -n "$FIXES" ] && echo "## 🐛 Bug Fixes" && echo "" && echo "$FIXES"
+            [ -n "$OTHER" ] && echo "## 📝 Other Changes" && echo "" && echo "$OTHER"
+            [ -z "$FEATURES" ] && [ -z "$FIXES" ] && [ -z "$OTHER" ] && echo "## Changes" && echo "" && echo "- See full changelog in commit history"
+            echo ""
+            echo "## 📦 Installation"
+            echo ""
+            echo "1. Download the zip"
+            echo "2. Extract to your Jellyfin plugins folder"
+            echo "3. Restart Jellyfin"
+          } > release-notes.md
           
-          NOTES="$NOTES\n\n## 📦 Installation\n\n1. Download the zip\n2. Extract to your Jellyfin plugins folder\n3. Restart Jellyfin"
-          
-          echo "$NOTES" > release-notes.md
           cat release-notes.md
 
       - name: Create Release
