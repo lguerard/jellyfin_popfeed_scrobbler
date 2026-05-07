@@ -99,6 +99,10 @@ jobs:
       - name: Update Manifest
         if: github.event_name == 'push'
         run: |
+          # Fetch main and checkout to it for pushing
+          git fetch origin main
+          git checkout origin/main
+          
           VERSION=${{ steps.version.outputs.VERSION }}
           ARTIFACT=$(ls artifacts/*.zip | head -1)
           CHECKSUM=$(sha256sum "$ARTIFACT" | cut -d' ' -f1)
