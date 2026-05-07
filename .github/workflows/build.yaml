@@ -40,14 +40,20 @@ jobs:
           VERSION="${{ github.event.inputs.version }}"
         else
           # Get current version from build.yaml and increment
-          VERSION=$(yq eval '.version' build.yaml)
-          VERSION=$((VERSION + 1))
+          CURRENT=$(yq eval '.version' build.yaml)
+          # Split version and increment patch
+          MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+          MINOR=$(echo "$CURRENT" | cut -d. -f2)
+          PATCH=$(echo "$CURRENT" | cut -d. -f3)
+          PATCH=$((PATCH + 1))
+          VERSION="${MAJOR}.${MINOR}.${PATCH}"
         fi
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
         echo "Building version: $VERSION"
     
     - name: Update build.yaml version
       run: |
+        export VERSION=${{ steps.version.outputs.VERSION }}
         yq -i '.version = env(VERSION)' build.yaml
 
     - name: Create Artifacts Directory
