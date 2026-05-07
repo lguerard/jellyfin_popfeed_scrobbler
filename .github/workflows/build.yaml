@@ -68,6 +68,36 @@ jobs:
         name: popfeed-plugin
         path: artifacts/popfeed_*.zip
         retention-days: 5
+    
+    - name: Update Manifest
+      run: |
+        VERSION=${{ steps.version.outputs.VERSION }}
+        CHECKSUM=$(md5sum artifacts/popfeed_*.zip | awk '{print $1}')
+        RELEASE_DATE=$(date +%Y-%m-%d)
+        
+        cat > manifest.json << EOF
+        [
+          {
+            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "name": "Popfeed",
+            "description": "Sync your Jellyfin watch history with Popfeed and optionally post to Bluesky when you finish watching.",
+            "owner": "lguerard",
+            "category": "General",
+            "versions": [
+              {
+                "version": "$VERSION",
+                "targetAbi": "10.11.0.0",
+                "framework": "net9.0",
+                "changelog": "$(yq eval '.changelog' build.yaml | tr '\n' '\\n' | sed 's/\\/\\\\/g')",
+                "releaseDate": "$RELEASE_DATE",
+                "status": "Stable",
+                "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v$VERSION/popfeed_$VERSION.zip",
+                "checksum": "$CHECKSUM"
+              }
+            ]
+          }
+        ]
+        EOF
 
   release:
     needs: build
@@ -101,4 +131,4 @@ jobs:
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
         commit_message: "Bump version to ${{ needs.build.outputs.version }}"
-        file_pattern: build.yaml
+        file_pattern: build.yaml manifest.json
