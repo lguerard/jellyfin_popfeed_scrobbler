@@ -34,6 +34,14 @@ jobs:
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
           sed -i "s/^version: \".*\"/version: \"$VERSION\"/" build.yaml
+          
+      - name: Commit version update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add build.yaml
+          git diff --staged --quiet || git commit -m "chore: update version to ${{ steps.version.outputs.VERSION }}"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/lguerard/jellyfin_popfeed_scrobbler.git HEAD:main
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
