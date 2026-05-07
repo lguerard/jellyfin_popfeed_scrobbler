@@ -1,8 +1,7 @@
 ---
 name: "Popfeed"
 guid: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-imageUrl: "https://raw.githubusercontent.com/lguerard/jellyfin_popfeed_scrobbler/main/popfeed.png"
-version: "1.0.0.0"
+version: 1
 targetAbi: "10.11.0.0"
 framework: "net9.0"
 owner: "lguerard"
