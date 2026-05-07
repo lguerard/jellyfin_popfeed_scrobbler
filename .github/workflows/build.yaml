@@ -1,123 +1,16 @@
-name: Build and Release Plugin
+name: '🏗️ Build Plugin'
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to build (e.g., 1.0.0)'
-        required: true
-        type: string
-
-permissions:
-  contents: write
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.get-version.outputs.version }}
-    
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '9.0.x'
-    
-    - name: Install JPRM and tools
-      run: |
-        pip install --break-system-packages jprm jq
-        wget https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64 -O /usr/local/bin/yq
-        chmod +x /usr/local/bin/yq
-    
-    - name: Get Version
-      id: get-version
-      run: |
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          VERSION="${{ github.event.inputs.version }}"
-        else
-          VERSION="${GITHUB_REF#refs/tags/v}"
-        fi
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "Building version: $VERSION"
-    
-    - name: Update build.yaml version
-      run: |
-        export VERSION=${{ steps.get-version.outputs.version }}
-        yq -i '.version = env(VERSION)' build.yaml
-
-    - name: Build Plugin
-      run: |
-        VERSION=${{ steps.get-version.outputs.version }}
-        jprm plugin build . --output=./artifacts --version="$VERSION"
-        ls -la artifacts/
-    
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: plugin-package
-        path: artifacts/*.zip
-        retention-days: 30
-    
-- name: Update Manifest
-      run: |
-        VERSION=${{ steps.get-version.outputs.VERSION }}
-        PACKAGE=$(ls artifacts/*.zip | head -1)
-        BASENAME=$(basename "$PACKAGE")
-        CHECKSUM=$(md5sum "$PACKAGE" | cut -d' ' -f1)
-        TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-        
-        # Get changelog
-        CHANGELOG=$(yq eval '.changelog' build.yaml | head -c 500)
-        
-        # Build new version entry using actual filename
-        jq -n --arg v "$VERSION" \
-           --arg url "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v$VERSION/$BASENAME" \
-           --arg checksum "$CHECKSUM" \
-           --arg timestamp "$TIMESTAMP" \
-           --arg changelog "$CHANGELOG" \
-           '{version: $v, targetAbi: "10.11.0.0", framework: "net9.0", changelog: $changelog, releaseDate: $timestamp, status: "Stable", downloadUrl: $url, checksum: $checksum}' > /tmp/new_version.json
-        
-        # Prepend to existing versions or create new array
-        if [ -f manifest.json ] && [ -s manifest.json ]; then
-          jq -s --argjson newver "$(cat /tmp/new_version.json)" '[$newver] + .[0].versions' manifest.json > manifest_updated.json
-          mv manifest_updated.json manifest.json
-        else
-          # Create basic array structure
-          jq -n --argjson ver "$(cat /tmp/new_version.json)" '[{id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", name: "Popfeed", description: "Sync your Jellyfin watch history with Popfeed and optionally post to Bluesky when you finish watching.", owner: "lguerard", category: "General", versions: [$ver]}]' > manifest.json
-        fi
-    
-    - name: Commit Version Bump
-      uses: stefanzweifel/git-auto-commit-action@v5
-      with:
-        commit_message: "Bump version to ${{ steps.get-version.outputs.VERSION }}"
-        file_pattern: build.yaml manifest.json
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Download Artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: plugin-package
-        path: artifacts
-    
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      with:
-        name: 'Release v${{ needs.build.outputs.version }}'
-        files: artifacts/popfeed_*.zip
-        generate_release_notes: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    uses: jellyfin/jellyfin-meta-plugins/.github/workflows/build.yaml@672e46d3ec5096731edbb7581ca872f3d8175cf8
