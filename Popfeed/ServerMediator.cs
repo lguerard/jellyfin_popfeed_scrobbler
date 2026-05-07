@@ -137,13 +137,35 @@ public class ServerMediator : IHostedService
 
         if (userConfig.PostToBluesky && !string.IsNullOrEmpty(userConfig.BlueskyHandle) && !string.IsNullOrEmpty(userConfig.BlueskyAppPassword))
         {
+            bool shouldBlueskyPost = false;
+            
             if (isMovie)
             {
-                await blueskyService.PostToBlueskyAsync(userConfig, title, year, null, true);
+                shouldBlueskyPost = true;
             }
-            else if (isEpisode && shouldPost)
+            else if (isEpisode)
             {
-                await blueskyService.PostToBlueskyAsync(userConfig, title, year, null, false);
+                if (userConfig.PostOnSeasonComplete)
+                {
+                    var episode = item as Episode;
+                    if (episode != null)
+                    {
+                        var season = episode.Season;
+                        if (season != null)
+                        {
+                            shouldBlueskyPost = await CheckSeasonComplete(user, season, episode);
+                        }
+                    }
+                }
+                else if (userConfig.PostEachEpisode)
+                {
+                    shouldBlueskyPost = true;
+                }
+            }
+            
+            if (shouldBlueskyPost)
+            {
+                await blueskyService.PostToBlueskyAsync(userConfig, title, year, null, isMovie);
             }
         }
     }
