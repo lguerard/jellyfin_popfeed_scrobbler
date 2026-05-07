@@ -54,7 +54,8 @@ jobs:
 
     - name: Build Plugin
       run: |
-        jprm plugin build . --output=./artifacts --version=${{ steps.get-version.outputs.version }}
+        VERSION=${{ steps.get-version.outputs.version }}
+        jprm plugin build . --output=./artifacts --version="$VERSION"
         ls -la artifacts/
     
     - name: Upload Artifact
