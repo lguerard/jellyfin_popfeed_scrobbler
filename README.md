@@ -18,7 +18,7 @@ A Jellyfin plugin that syncs your watch history with Popfeed and optionally post
 4. Add this manifest URL:
 
 ```
-https://raw.githubusercontent.com/lguerard/jellyfin-plugin-popfeed/main/manifest.json
+https://raw.githubusercontent.com/lguerard/jellyfin_popfeed_scrobbler/main/manifest.json
 ```
 
 5. Go to **Plugins** → **Catalog**
@@ -26,7 +26,7 @@ https://raw.githubusercontent.com/lguerard/jellyfin-plugin-popfeed/main/manifest
 
 ### Option 2: Manual Installation
 
-1. Download the latest release from [GitHub Releases](https://github.com/lguerard/jellyfin-plugin-popfeed/releases)
+1. Download the latest release from [GitHub Releases](https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases)
 2. Upload the zip file in Jellyfin: **Plugins** → **Upload**
 
 ## Configuration

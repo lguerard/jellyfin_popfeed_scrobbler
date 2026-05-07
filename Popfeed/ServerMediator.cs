@@ -109,20 +109,23 @@ public class ServerMediator : IHostedService
             {
                 shouldPost = true;
             }
-            else if (isEpisode && userConfig.PostEachEpisode)
+            else if (isEpisode)
             {
-                shouldPost = true;
-            }
-            else if (isEpisode && userConfig.PostOnSeasonComplete)
-            {
-                var episode = item as Episode;
-                if (episode != null)
+                if (userConfig.PostOnSeasonComplete)
                 {
-                    var season = episode.Season;
-                    if (season != null)
+                    var episode = item as Episode;
+                    if (episode != null)
                     {
-                        shouldPost = await CheckSeasonComplete(user, season, episode);
+                        var season = episode.Season;
+                        if (season != null)
+                        {
+                            shouldPost = await CheckSeasonComplete(user, season, episode);
+                        }
                     }
+                }
+                else if (userConfig.PostEachEpisode)
+                {
+                    shouldPost = true;
                 }
             }
 
@@ -138,11 +141,7 @@ public class ServerMediator : IHostedService
             {
                 await blueskyService.PostToBlueskyAsync(userConfig, title, year, null, true);
             }
-            else if (isEpisode && userConfig.PostEachEpisode)
-            {
-                await blueskyService.PostToBlueskyAsync(userConfig, title, year, null, false);
-            }
-            else if (isEpisode && userConfig.PostOnSeasonComplete && shouldPost)
+            else if (isEpisode && shouldPost)
             {
                 await blueskyService.PostToBlueskyAsync(userConfig, title, year, null, false);
             }
