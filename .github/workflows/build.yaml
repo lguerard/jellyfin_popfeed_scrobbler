@@ -99,16 +99,16 @@ jobs:
       - name: Update Manifest
         if: github.event_name == 'push'
         run: |
-          VERSION=$VERSION
+          VERSION=${{ steps.version.outputs.VERSION }}
           ARTIFACT=$(ls artifacts/*.zip | head -1)
           CHECKSUM=$(sha256sum "$ARTIFACT" | cut -d' ' -f1)
           
-          # Update manifest.json using jq
+          # Update manifest.json using jq (manifest.json is an array)
           jq --arg version "$VERSION" \
              --arg url "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v${VERSION}/$(basename $ARTIFACT)" \
              --arg checksum "$CHECKSUM" \
              --arg date "$(date -u +%Y-%m-%d)" \
-             '.versions[0] |= {"version": $version, "downloadUrl": $url, "checksum": $checksum, "releaseDate": $date}' manifest.json > manifest.json.tmp && mv manifest.json.tmp manifest.json
+             '.[0].versions[0] |= {"version": $version, "downloadUrl": $url, "checksum": $checksum, "releaseDate": $date}' manifest.json > manifest.json.tmp && mv manifest.json.tmp manifest.json
           
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
