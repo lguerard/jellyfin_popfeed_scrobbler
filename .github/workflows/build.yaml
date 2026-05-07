@@ -69,34 +69,58 @@ jobs:
         path: artifacts/popfeed_*.zip
         retention-days: 5
     
-    - name: Update Manifest
+- name: Update Manifest
       run: |
+        set -e
         VERSION=${{ steps.version.outputs.VERSION }}
         CHECKSUM=$(md5sum artifacts/popfeed_*.zip | awk '{print $1}')
         RELEASE_DATE=$(date +%Y-%m-%d)
         
-        # Get existing versions or use empty array
+        # Get current version list (max 5 to keep small)
         if [ -f manifest.json ] && [ -s manifest.json ]; then
-          EXISTING=$(cat manifest.json | jq -c '.[0].versions // []')
+          LEVELS=$(jq '.[0].versions[:5] | length' manifest.json 2>/dev/null || echo "0")
         else
-          EXISTING='[]'
+          LEVELS="0"
         fi
         
-        # Get changelog as JSON string
-        CHANGELOG=$(yq eval -o json '.changelog' build.yaml)
+        # Build new version object
+        CHANGELOG=$(yq eval '.changelog' build.yaml | head -c 500)  # limit length
+        cat > /tmp/new_version.json << VNEW
+        {
+          "version": "$VERSION",
+          "targetAbi": "10.11.0.0",
+          "framework": "net9.0",
+          "changelog": "$CHANGELOG",
+          "releaseDate": "$RELEASE_DATE",
+          "status": "Stable",
+          "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v$VERSION/popfeed_$VERSION.zip",
+          "checksum": "$CHECKSUM"
+        }
+VNEW
         
-        # Create new version entry
-        jq -n --arg v "$VERSION" --arg date "$RELEASE_DATE" --arg checksum "$CHECKSUM" \
-           --arg url "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v$VERSION/popfeed_$VERSION.zip" \
-           --argjson changelog "$CHANGELOG" \
-           '{version: $v, targetAbi: "10.11.0.0", framework: "net9.0", changelog: $changelog, releaseDate: $date, status: "Stable", downloadUrl: $url, checksum: $checksum}' > /tmp/new_version.json
+        # Read old versions
+        if [ -f manifest.json ] && [ "$LEVELS" -gt 0 ] 2>/dev/null; then
+          OLD_VERSIONS=$(jq -c '.[0].versions[:5]' manifest.json 2>/dev/null || echo "[]")
+        else
+          OLD_VERSIONS="[]"
+        fi
         
-        # Combine: new version first, then existing
-        COMBINED=$(jq -s --argjson new "$(cat /tmp/new_version.json)" --argjson existing "$EXISTING" '$new + $existing')
+        # Combine: new + old
+        COMBINED=$(jq -s --argjson new "$(cat /tmp/new_version.json)" --argjson old "$OLD_VERSIONS" '$new + $old')
         
-        # Write full manifest
-        jq -n --argjson versions "$COMBINED" \
-           '[{id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890", name: "Popfeed", description: "Sync your Jellyfin watch history with Popfeed and optionally post to Bluesky when you finish watching.", owner: "lguerard", category: "General", versions: $versions}]' > manifest.json
+        # Write manifest
+        cat > manifest.json << MFINAL
+        [
+          {
+            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "name": "Popfeed",
+            "description": "Sync your Jellyfin watch history with Popfeed and optionally post to Bluesky when you finish watching.",
+            "owner": "lguerard",
+            "category": "General",
+            "versions": $COMBINED
+          }
+        ]
+MFINAL
     
     - name: Commit Version Bump
       uses: stefanzweifel/git-auto-commit-action@v5
