@@ -139,13 +139,13 @@ jobs:
           # Read release notes and escape for JSON
           RELEASE_NOTES=$(jq -Rs '.' release-notes.md)
           
-          # Update manifest.json using jq (manifest.json is an array)
+          # Update manifest.json - prepend new version to the versions array
           jq --arg version "$VERSION" \
              --arg url "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v${VERSION}/$(basename $ARTIFACT)" \
              --arg checksum "$CHECKSUM" \
              --arg date "$(date -u +%Y-%m-%d)" \
              --arg notes "$RELEASE_NOTES" \
-             '.[0].versions[0] |= {"version": $version, "downloadUrl": $url, "checksum": $checksum, "releaseDate": $date, "releaseNotes": $notes}' manifest.json > manifest.json.tmp && mv manifest.json.tmp manifest.json
+             '.[0].versions |= ([{"version": $version, "downloadUrl": $url, "checksum": $checksum, "releaseDate": $date, "releaseNotes": $notes}] + .)' manifest.json > manifest.json.tmp && mv manifest.json.tmp manifest.json
           
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
