@@ -7,14 +7,10 @@
     "category": "General",
     "versions": [
       {
-        "version": "1.0.5",
-        "targetAbi": "10.11.0.0",
-        "framework": "net9.0",
-        "changelog": "- Initial release\n- Mark watched items on Popfeed (properly marked as finished)\n- Optional posting to Bluesky",
-        "releaseDate": "2026-05-07",
-        "status": "Stable",
-        "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v1.0.5/popfeed_1.0.5.zip",
-        "checksum": "02d195a9ffefee97048d5c07f2828455"
+        "version": "1.1.0",
+        "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v1.1.0/popfeed_1.1.0.0.zip",
+        "checksum": "fc4026c5c1b480bc05a629ecab995bf8d40fafb08dbe32ed386ff7e35e26e1d2",
+        "releaseDate": "2026-05-07"
       }
     ]
   }
