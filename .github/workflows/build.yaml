@@ -48,11 +48,11 @@ jobs:
           CURRENT_TAG="v$VERSION"
           PREV_TAG=$(git tag --sort=-version:refname | grep -A1 "^${CURRENT_TAG}$" | tail -1 | grep -v "^${CURRENT_TAG}$" || echo "")
           
-          if [ -n "$PREV_TAG" ]; then
-            COMMITS=$(git log --pretty=format:"- %s (%an)" --reverse "$PREV_TAG"..HEAD 2>/dev/null || git log --pretty=format:"- %s (%an)" --reverse -10)
-          else
-            COMMITS=$(git log --pretty=format:"- %s (%an)" --reverse -10)
-          fi
+if [ -n "$PREV_TAG" ]; then
+             COMMITS=$(git log --pretty=format:"- %s (@%an)" --reverse "$PREV_TAG"..HEAD 2>/dev/null || git log --pretty=format:"- %s (@%an)" --reverse -10)
+           else
+             COMMITS=$(git log --pretty=format:"- %s (@%an)" --reverse -10)
+           fi
           
           # Categorize
           FEATURES=""
