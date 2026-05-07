@@ -13,8 +13,8 @@
         "changelog": "- Initial release\n- Mark watched items on Popfeed (properly marked as finished)\n- Optional posting to Bluesky",
         "releaseDate": "2026-05-07",
         "status": "Stable",
-        "downloadUrl": "",
-        "checksum": ""
+        "downloadUrl": "https://github.com/lguerard/jellyfin_popfeed_scrobbler/releases/download/v1.0.0/jellyfin-popfeed-scrobbler_1.0.0.0.zip",
+        "checksum": "e53686c0664862a22b312284185a67e1eaa02242511b2e0773f6186f804a0daa"
       }
     ]
   }
